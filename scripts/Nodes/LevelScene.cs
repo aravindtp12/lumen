@@ -115,20 +115,23 @@ public partial class LevelScene : Node2D
 
     private float _animT;
 
-    // Constant breathe on the headline UI — the same Balatro-style undertone
+    // Constant wiggle on the headline UI — the same Balatro-style undertone
     // the world objects use, so the screen never looks frozen even on idle
     // overlays. Runs every frame regardless of game state.
     private void TickOverlayPulse()
     {
         if (_overlayTitle != null && _overlayTitle.Visible)
             PulseAnim.ApplyTo(_overlayTitle, _animT,
-                              PulseAnim.SeedOf("overlay-title"), amp: 0.06f);
+                              PulseAnim.SeedOf("overlay-title"),
+                              scaleMul: 1.6f, rotMul: 1.6f);
         if (_overlayPrompt != null && _overlayPrompt.Visible)
             PulseAnim.ApplyTo(_overlayPrompt, _animT,
-                              PulseAnim.SeedOf("overlay-prompt"), amp: 0.035f);
+                              PulseAnim.SeedOf("overlay-prompt"),
+                              scaleMul: 0.9f, rotMul: 0.9f);
         if (_winLabel != null && _winLabel.Visible)
             PulseAnim.ApplyTo(_winLabel, _animT,
-                              PulseAnim.SeedOf("win-label"), amp: 0.06f);
+                              PulseAnim.SeedOf("win-label"),
+                              scaleMul: 1.6f, rotMul: 1.6f);
     }
 
     // ── Scene graph ───────────────────────────────────────────────────────────

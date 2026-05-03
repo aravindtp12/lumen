@@ -13,15 +13,15 @@ public partial class SaveSlotsScene : Node2D
     public static SlotMode Mode = SlotMode.New;
 
     private float _t;
-    private readonly List<(Control node, int seed, float amp)> _pulse = new();
+    private readonly List<(Control node, int seed, float mul)> _pulse = new();
 
     public override void _Ready() => BuildHud();
 
     public override void _Process(double delta)
     {
         _t += (float)delta;
-        foreach (var (node, seed, amp) in _pulse)
-            PulseAnim.ApplyTo(node, _t, seed, amp);
+        foreach (var (node, seed, mul) in _pulse)
+            PulseAnim.ApplyTo(node, _t, seed, scaleMul: mul, rotMul: mul);
     }
 
     private void BuildHud()
@@ -36,7 +36,7 @@ public partial class SaveSlotsScene : Node2D
         title.AnchorLeft = 0; title.AnchorRight = 1;
         title.OffsetTop  = 70;
         hud.AddChild(title);
-        _pulse.Add((title, PulseAnim.SeedOf("title"), 0.045f));
+        _pulse.Add((title, PulseAnim.SeedOf("title"), 1.5f));
 
         var col = new VBoxContainer
         {
@@ -53,7 +53,7 @@ public partial class SaveSlotsScene : Node2D
             var data   = SaveSystem.Load(slot);
             var card   = BuildSlotCard(slot, data);
             col.AddChild(card);
-            _pulse.Add((card, slot, 0.025f));
+            _pulse.Add((card, slot, 0.7f));
         }
 
         var back = MenuTheme.MakeButton("Back", new Vector2(140, 36));

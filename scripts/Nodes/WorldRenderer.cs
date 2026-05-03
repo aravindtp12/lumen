@@ -554,10 +554,9 @@ public partial class WorldRenderer : Node2D
         {
             if (!_comps.TryGetValue(comp.Id, out var v)) continue;
 
-            // Constant Balatro-style breathe; phase seeded by component id so
-            // adjacent components don't pulse in lockstep.
-            float pulse = PulseAnim.Scale(_t, comp.Id);
-            DrawSetTransformMatrix(PulseAnim.ScaleAround(v.Pos, pulse));
+            // Constant Balatro-style wiggle; phase seeded by component id so
+            // adjacent components don't move in lockstep.
+            DrawSetTransformMatrix(PulseAnim.Pulse(v.Pos, _t, PulseAnim.SeedOf(comp.Id)));
 
             switch (comp.Type)
             {
@@ -883,8 +882,7 @@ public partial class WorldRenderer : Node2D
             };
             body.A = 1f;
 
-            float pulse = PulseAnim.Scale(_t, crate.Id);
-            DrawSetTransformMatrix(PulseAnim.ScaleAround(pos, pulse));
+            DrawSetTransformMatrix(PulseAnim.Pulse(pos, _t, PulseAnim.SeedOf(crate.Id)));
 
             var rect = new Rect2(pos - new Vector2(26, 26), new Vector2(52, 52));
             DrawRect(rect, body);
@@ -913,10 +911,12 @@ public partial class WorldRenderer : Node2D
         // grounded while the body scales above it.
         DrawCircle(c + new Vector2(0, 24f - bob), 16f, new Color(0, 0, 0, 0.42f));
 
-        // Subtle breathe (smaller amp than the rest — the player already has
-        // bob + eye + antenna pulses, so layering more on top gets noisy).
-        float pulse = PulseAnim.Scale(_t, "_player", amp: 0.025f);
-        DrawSetTransformMatrix(PulseAnim.ScaleAround(c, pulse));
+        // Subtle wiggle — half the rest of the world's amp because the player
+        // already has bob + eye + antenna pulses, so layering more on top
+        // gets noisy.
+        DrawSetTransformMatrix(PulseAnim.Pulse(c, _t, PulseAnim.SeedOf("_player"),
+                                               scaleAmp: PulseAnim.ScaleAmp * 0.5f,
+                                               rotAmp:   PulseAnim.RotAmp   * 0.5f));
 
         // Palette
         var bodyCol  = new Color(0.22f, 0.24f, 0.30f);
