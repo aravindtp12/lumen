@@ -1,0 +1,132 @@
+{
+  "name": "Crossroads",
+  "world": "Foundations",
+  "index": 5,
+  "width": 17,
+  "height": 11,
+  "playerStart": [2, 2],
+  "tiles": [
+    { "x": 0,  "y": 0, "type": "Wall" }, { "x": 1,  "y": 0, "type": "Wall" },
+    { "x": 2,  "y": 0, "type": "Wall" }, { "x": 3,  "y": 0, "type": "Wall" },
+    { "x": 4,  "y": 0, "type": "Wall" }, { "x": 5,  "y": 0, "type": "Wall" },
+    { "x": 6,  "y": 0, "type": "Wall" }, { "x": 7,  "y": 0, "type": "Wall" },
+    { "x": 8,  "y": 0, "type": "Wall" }, { "x": 9,  "y": 0, "type": "Wall" },
+    { "x": 10, "y": 0, "type": "Wall" }, { "x": 11, "y": 0, "type": "Wall" },
+    { "x": 12, "y": 0, "type": "Wall" }, { "x": 13, "y": 0, "type": "Wall" },
+    { "x": 14, "y": 0, "type": "Wall" }, { "x": 15, "y": 0, "type": "Wall" },
+    { "x": 16, "y": 0, "type": "Wall" },
+
+    { "x": 0,  "y": 10, "type": "Wall" }, { "x": 1,  "y": 10, "type": "Wall" },
+    { "x": 2,  "y": 10, "type": "Wall" }, { "x": 3,  "y": 10, "type": "Wall" },
+    { "x": 4,  "y": 10, "type": "Wall" }, { "x": 5,  "y": 10, "type": "Wall" },
+    { "x": 6,  "y": 10, "type": "Wall" }, { "x": 7,  "y": 10, "type": "Wall" },
+    { "x": 8,  "y": 10, "type": "Wall" }, { "x": 9,  "y": 10, "type": "Wall" },
+    { "x": 10, "y": 10, "type": "Wall" }, { "x": 11, "y": 10, "type": "Wall" },
+    { "x": 12, "y": 10, "type": "Wall" }, { "x": 13, "y": 10, "type": "Wall" },
+    { "x": 14, "y": 10, "type": "Wall" }, { "x": 15, "y": 10, "type": "Wall" },
+    { "x": 16, "y": 10, "type": "Wall" },
+
+    { "x": 0, "y": 1, "type": "Wall" }, { "x": 0, "y": 2, "type": "Wall" },
+    { "x": 0, "y": 3, "type": "Wall" }, { "x": 0, "y": 4, "type": "Wall" },
+    { "x": 0, "y": 5, "type": "Wall" }, { "x": 0, "y": 6, "type": "Wall" },
+    { "x": 0, "y": 7, "type": "Wall" }, { "x": 0, "y": 8, "type": "Wall" },
+    { "x": 0, "y": 9, "type": "Wall" },
+
+    { "x": 16, "y": 1, "type": "Wall" }, { "x": 16, "y": 2, "type": "Wall" },
+    { "x": 16, "y": 3, "type": "Wall" }, { "x": 16, "y": 4, "type": "Wall" },
+    { "x": 16, "y": 5, "type": "Wall" }, { "x": 16, "y": 6, "type": "Wall" },
+    { "x": 16, "y": 7, "type": "Wall" }, { "x": 16, "y": 8, "type": "Wall" },
+    { "x": 16, "y": 9, "type": "Wall" },
+
+    { "x": 5, "y": 1, "type": "Wall" }, { "x": 5, "y": 2, "type": "Wall" },
+    { "x": 5, "y": 3, "type": "Wall" }, { "x": 5, "y": 4, "type": "Wall" },
+    { "x": 5, "y": 6, "type": "Wall" }, { "x": 5, "y": 7, "type": "Wall" },
+    { "x": 5, "y": 8, "type": "Wall" }, { "x": 5, "y": 9, "type": "Wall" },
+    { "x": 5, "y": 5, "type": "Door", "doorId": "door_1" },
+
+    { "x": 11, "y": 1, "type": "Wall" }, { "x": 11, "y": 2, "type": "Wall" },
+    { "x": 11, "y": 3, "type": "Wall" }, { "x": 11, "y": 4, "type": "Wall" },
+    { "x": 11, "y": 6, "type": "Wall" }, { "x": 11, "y": 7, "type": "Wall" },
+    { "x": 11, "y": 8, "type": "Wall" }, { "x": 11, "y": 9, "type": "Wall" },
+    { "x": 11, "y": 5, "type": "Door", "doorId": "door_2" },
+
+    { "x": 8, "y": 3, "type": "Wall" },
+    { "x": 8, "y": 2, "type": "Wall" },
+    { "x": 7, "y": 3, "type": "Wall" }
+  ],
+  "components": [
+    {
+      "id": "source_blue",
+      "type": "Source",
+      "x": 8, "y": 6,
+      "rotation": 0,
+      "color": "Blue",
+      "pushable": true,
+      "rotatable": true,
+      "powered": true
+    },
+    {
+      "id": "source_red",
+      "type": "Source",
+      "x": 8, "y": 8,
+      "rotation": 90,
+      "color": "Red",
+      "pushable": true,
+      "rotatable": true,
+      "powered": true
+    },
+    {
+      "id": "receiver_blue",
+      "type": "Receiver",
+      "x": 7, "y": 1,
+      "rotation": 0,
+      "color": "Blue",
+      "pushable": false,
+      "rotatable": false
+    },
+    {
+      "id": "receiver_red",
+      "type": "Receiver",
+      "x": 14, "y": 1,
+      "rotation": 0,
+      "color": "Red",
+      "pushable": false,
+      "rotatable": false
+    },
+    {
+      "id": "mirror_left",
+      "type": "Mirror",
+      "x": 3, "y": 5,
+      "rotation": 0,
+      "pushable": true,
+      "rotatable": true
+    },
+    {
+      "id": "mirror_right",
+      "type": "Mirror",
+      "x": 13, "y": 5,
+      "rotation": 0,
+      "pushable": true,
+      "rotatable": true
+    }
+  ],
+  "crates": [],
+  "pressurePlates": [
+    {
+      "id": "plate_red",
+      "x": 2, "y": 5,
+      "mode": "Weight",
+      "latching": false,
+      "targetIds": ["door_1"],
+      "logic": "OR"
+    },
+    {
+      "id": "plate_blue",
+      "x": 10, "y": 3,
+      "mode": "Weight",
+      "latching": false,
+      "targetIds": ["door_2"],
+      "logic": "OR"
+    }
+  ]
+}

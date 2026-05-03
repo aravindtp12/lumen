@@ -1,0 +1,58 @@
+{
+  "name": "Turning the Light",
+  "world": "Foundations",
+  "index": 1,
+  "width": 8,
+  "height": 8,
+  "playerStart": [6, 4],
+  "tiles": [
+    { "x": 0, "y": 0, "type": "Wall" }, { "x": 1, "y": 0, "type": "Wall" },
+    { "x": 2, "y": 0, "type": "Wall" }, { "x": 3, "y": 0, "type": "Wall" },
+    { "x": 4, "y": 0, "type": "Wall" }, { "x": 5, "y": 0, "type": "Wall" },
+    { "x": 6, "y": 0, "type": "Wall" }, { "x": 7, "y": 0, "type": "Wall" },
+
+    { "x": 0, "y": 7, "type": "Wall" }, { "x": 1, "y": 7, "type": "Wall" },
+    { "x": 2, "y": 7, "type": "Wall" }, { "x": 3, "y": 7, "type": "Wall" },
+    { "x": 4, "y": 7, "type": "Wall" }, { "x": 5, "y": 7, "type": "Wall" },
+    { "x": 6, "y": 7, "type": "Wall" }, { "x": 7, "y": 7, "type": "Wall" },
+
+    { "x": 0, "y": 1, "type": "Wall" }, { "x": 0, "y": 2, "type": "Wall" },
+    { "x": 0, "y": 3, "type": "Wall" }, { "x": 0, "y": 4, "type": "Wall" },
+    { "x": 0, "y": 5, "type": "Wall" }, { "x": 0, "y": 6, "type": "Wall" },
+
+    { "x": 7, "y": 1, "type": "Wall" }, { "x": 7, "y": 2, "type": "Wall" },
+    { "x": 7, "y": 3, "type": "Wall" }, { "x": 7, "y": 4, "type": "Wall" },
+    { "x": 7, "y": 5, "type": "Wall" }, { "x": 7, "y": 6, "type": "Wall" }
+  ],
+  "components": [
+    {
+      "id": "source_1",
+      "type": "Source",
+      "x": 1, "y": 4,
+      "rotation": 90,
+      "color": "Red",
+      "pushable": false,
+      "rotatable": false,
+      "powered": true
+    },
+    {
+      "id": "mirror_1",
+      "type": "Mirror",
+      "x": 4, "y": 4,
+      "rotation": 90,
+      "pushable": true,
+      "rotatable": true
+    },
+    {
+      "id": "receiver_1",
+      "type": "Receiver",
+      "x": 4, "y": 6,
+      "rotation": 180,
+      "color": "Red",
+      "pushable": false,
+      "rotatable": false
+    }
+  ],
+  "crates": [],
+  "pressurePlates": []
+}

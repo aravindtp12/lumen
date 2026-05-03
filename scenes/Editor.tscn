@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b7nj3rkyap2m4"]
+
+[ext_resource type="Script" uid="uid://dgkv8qm4r6t7n" path="res://scripts/Nodes/EditorScene.cs" id="1"]
+
+[node name="Editor" type="Node2D"]
+script = ExtResource("1")

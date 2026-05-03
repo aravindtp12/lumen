@@ -1,0 +1,68 @@
+{
+  "name": "Weight of Light",
+  "world": "Foundations",
+  "index": 3,
+  "width": 11,
+  "height": 7,
+  "playerStart": [3, 5],
+  "tiles": [
+	{ "x": 0, "y": 0, "type": "Wall" }, { "x": 1, "y": 0, "type": "Wall" },
+	{ "x": 2, "y": 0, "type": "Wall" }, { "x": 3, "y": 0, "type": "Wall" },
+	{ "x": 4, "y": 0, "type": "Wall" }, { "x": 5, "y": 0, "type": "Wall" },
+	{ "x": 6, "y": 0, "type": "Wall" }, { "x": 7, "y": 0, "type": "Wall" },
+	{ "x": 8, "y": 0, "type": "Wall" }, { "x": 9, "y": 0, "type": "Wall" },
+	{ "x": 10, "y": 0, "type": "Wall" },
+
+	{ "x": 0, "y": 6, "type": "Wall" }, { "x": 1, "y": 6, "type": "Wall" },
+	{ "x": 2, "y": 6, "type": "Wall" }, { "x": 3, "y": 6, "type": "Wall" },
+	{ "x": 4, "y": 6, "type": "Wall" }, { "x": 5, "y": 6, "type": "Wall" },
+	{ "x": 6, "y": 6, "type": "Wall" }, { "x": 7, "y": 6, "type": "Wall" },
+	{ "x": 8, "y": 6, "type": "Wall" }, { "x": 9, "y": 6, "type": "Wall" },
+	{ "x": 10, "y": 6, "type": "Wall" },
+
+	{ "x": 0, "y": 1, "type": "Wall" }, { "x": 0, "y": 2, "type": "Wall" },
+	{ "x": 0, "y": 3, "type": "Wall" }, { "x": 0, "y": 4, "type": "Wall" },
+	{ "x": 0, "y": 5, "type": "Wall" },
+
+	{ "x": 10, "y": 1, "type": "Wall" }, { "x": 10, "y": 2, "type": "Wall" },
+	{ "x": 10, "y": 3, "type": "Wall" }, { "x": 10, "y": 4, "type": "Wall" },
+	{ "x": 10, "y": 5, "type": "Wall" },
+
+	{ "x": 6, "y": 2, "type": "Wall" }, { "x": 6, "y": 3, "type": "Wall" },
+	{ "x": 6, "y": 4, "type": "Wall" }, { "x": 6, "y": 5, "type": "Wall" },
+
+	{ "x": 6, "y": 1, "type": "Door", "doorId": "door_1" }
+  ],
+  "components": [
+	{
+	  "id": "source_1",
+	  "type": "Source",
+	  "x": 2, "y": 4,
+	  "rotation": 90,
+	  "color": "Red",
+	  "pushable": true,
+	  "rotatable": false,
+	  "powered": true
+	},
+	{
+	  "id": "receiver_1",
+	  "type": "Receiver",
+	  "x": 9, "y": 1,
+	  "rotation": 90,
+	  "color": "Red",
+	  "pushable": false,
+	  "rotatable": false
+	}
+  ],
+  "crates": [],
+  "pressurePlates": [
+	{
+	  "id": "plate_1",
+	  "x": 4, "y": 2,
+	  "mode": "Weight",
+	  "latching": false,
+	  "targetIds": ["door_1"],
+	  "logic": "OR"
+	}
+  ]
+}

@@ -1,0 +1,26 @@
+# Godot 4 — generated/imported assets
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# .NET / C# build output
+bin/
+obj/
+*.csproj.user
+*.suo
+*.user
+*.userprefs
+.vs/
+
+# JetBrains Rider
+.idea/
+
+# VS Code (uncomment to ignore editor settings)
+# .vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
