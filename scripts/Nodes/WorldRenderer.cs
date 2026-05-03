@@ -554,6 +554,11 @@ public partial class WorldRenderer : Node2D
         {
             if (!_comps.TryGetValue(comp.Id, out var v)) continue;
 
+            // Constant Balatro-style breathe; phase seeded by component id so
+            // adjacent components don't pulse in lockstep.
+            float pulse = PulseAnim.Scale(_t, comp.Id);
+            DrawSetTransformMatrix(PulseAnim.ScaleAround(v.Pos, pulse));
+
             switch (comp.Type)
             {
                 case ComponentType.Source:    DrawSource(v.Pos, comp, v.RotDeg);              break;
@@ -567,6 +572,8 @@ public partial class WorldRenderer : Node2D
             }
 
             if (!comp.Pushable) DrawLockBadge(v.Pos);
+
+            DrawSetTransformMatrix(Transform2D.Identity);
         }
     }
 
@@ -876,6 +883,9 @@ public partial class WorldRenderer : Node2D
             };
             body.A = 1f;
 
+            float pulse = PulseAnim.Scale(_t, crate.Id);
+            DrawSetTransformMatrix(PulseAnim.ScaleAround(pos, pulse));
+
             var rect = new Rect2(pos - new Vector2(26, 26), new Vector2(52, 52));
             DrawRect(rect, body);
             DrawRect(rect, body.Lightened(0.25f), filled: false, width: 2f);
@@ -883,6 +893,8 @@ public partial class WorldRenderer : Node2D
             DrawLine(rect.Position, rect.Position + rect.Size, body.Darkened(0.20f), 1f);
             DrawLine(rect.Position + new Vector2(rect.Size.X, 0),
                      rect.Position + new Vector2(0, rect.Size.Y), body.Darkened(0.20f), 1f);
+
+            DrawSetTransformMatrix(Transform2D.Identity);
         }
     }
 
@@ -897,8 +909,14 @@ public partial class WorldRenderer : Node2D
         float bob = Mathf.Sin(_t * 3.5f) * 1.5f;
         c += new Vector2(0, bob);
 
-        // Soft shadow
+        // Soft shadow — drawn outside the breathe transform so it stays
+        // grounded while the body scales above it.
         DrawCircle(c + new Vector2(0, 24f - bob), 16f, new Color(0, 0, 0, 0.42f));
+
+        // Subtle breathe (smaller amp than the rest — the player already has
+        // bob + eye + antenna pulses, so layering more on top gets noisy).
+        float pulse = PulseAnim.Scale(_t, "_player", amp: 0.025f);
+        DrawSetTransformMatrix(PulseAnim.ScaleAround(c, pulse));
 
         // Palette
         var bodyCol  = new Color(0.22f, 0.24f, 0.30f);
@@ -946,6 +964,8 @@ public partial class WorldRenderer : Node2D
         // Tread bases
         DrawRect(new Rect2(c + new Vector2(-13, 14), new Vector2(8, 4)), bodyDark);
         DrawRect(new Rect2(c + new Vector2(  5, 14), new Vector2(8, 4)), bodyDark);
+
+        DrawSetTransformMatrix(Transform2D.Identity);
     }
 
     // ── Intersection sparks ───────────────────────────────────────────────────

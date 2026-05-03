@@ -33,19 +33,37 @@ public partial class LevelScene : Node2D
     private float   _toastTimer;
 
     // Overlay nodes — Intro and Complete share the same fullscreen surface
-    // and the same delay-then-fade entry animation; only the text differs.
-    private Control? _overlayRoot;
-    private Panel?   _overlayCard;
-    private Label?   _overlayKicker;
-    private Label?   _overlayTitle;
-    private Label?   _overlaySubtitle;
-    private Label?   _overlayPrompt;
+    // and a small phase state machine; only the text differs between them.
+    private Control?       _overlayRoot;
+    private Panel?         _overlayCard;
+    private VBoxContainer? _overlayCol;       // text-container; faded independently
+    private Label?         _overlayKicker;
+    private Label?         _overlayTitle;
+    private Label?         _overlaySubtitle;
+    private Label?         _overlayPrompt;
 
-    // Entry animation: small delay so the playfield is visible for a moment,
-    // then fade the overlay in. Driven from _Process.
-    private const float OverlayDelay = 0.7f;
-    private const float OverlayFade  = 0.5f;
-    private float       _fadeT = -1f; // -1 idle, otherwise seconds since show
+    // Animation phases. Intro plays auto-dismissed (text in → hold → overlay
+    // out). Complete fades the overlay in over the playfield and waits for
+    // Enter. The Complete→next-Intro transition crossfades the text while
+    // the overlay stays opaque (the "fade to black, fade in next intro").
+    private enum AnimPhase
+    {
+        Idle,
+        IntroTextIn,        // overlay opaque, text alpha 0→1
+        IntroHold,
+        IntroOverlayOut,    // overlay alpha 1→0 (reveals playfield)
+        CompleteWait,       // overlay alpha 0, level visible briefly
+        CompleteOverlayIn,  // overlay alpha 0→1
+        InterTextOut,       // overlay alpha 1, text alpha 1→0 (Complete fading away)
+        InterTextIn,        // overlay alpha 1, text alpha 0→1 (next Intro fading in)
+    }
+    private AnimPhase _phase = AnimPhase.Idle;
+    private float     _phaseT;
+
+    private const float OverlayFade   = 0.5f;
+    private const float TextFade      = 0.4f;
+    private const float IntroHoldT    = 1.6f;
+    private const float CompleteWaitT = 0.7f;
 
     // Input repeat timing
     private Direction _heldDir       = Direction.None;
@@ -82,7 +100,7 @@ public partial class LevelScene : Node2D
             return;
         }
 
-        LoadLevel(GameSession.CurrentWorldId!, GameSession.CurrentLevelIndex);
+        EnterLevelWithIntro(GameSession.CurrentWorldId!, GameSession.CurrentLevelIndex);
     }
 
     public override void _Process(double delta)
@@ -90,7 +108,7 @@ public partial class LevelScene : Node2D
         if (_state == null) return;
         HandleHeldMovement((float)delta);
         UpdateToast((float)delta);
-        TickOverlayFade((float)delta);
+        TickAnim((float)delta);
     }
 
     // ── Scene graph ───────────────────────────────────────────────────────────
@@ -180,29 +198,29 @@ public partial class LevelScene : Node2D
         _overlayCard.AddThemeStyleboxOverride("panel", cardStyle);
         _overlayRoot.AddChild(_overlayCard);
 
-        var col = new VBoxContainer
+        _overlayCol = new VBoxContainer
         {
             AnchorLeft   = 0, AnchorRight  = 1,
             AnchorTop    = 0, AnchorBottom = 1,
             OffsetLeft   = 40, OffsetRight  = -40,
             OffsetTop    = 60, OffsetBottom = -60,
         };
-        col.Alignment = BoxContainer.AlignmentMode.Center;
-        col.AddThemeConstantOverride("separation", 18);
-        _overlayCard.AddChild(col);
+        _overlayCol.Alignment = BoxContainer.AlignmentMode.Center;
+        _overlayCol.AddThemeConstantOverride("separation", 18);
+        _overlayCard.AddChild(_overlayCol);
 
         _overlayKicker   = MakeOverlayLabel("", 18, new Color(0.55f, 0.65f, 0.85f));
         _overlayTitle    = MakeOverlayLabel("", 64, new Color(0.95f, 0.97f, 1f));
         _overlaySubtitle = MakeOverlayLabel("", 18, new Color(0.65f, 0.72f, 0.86f));
-        _overlayPrompt   = MakeOverlayLabel("Press Enter to continue", 16, new Color(0.95f, 0.88f, 0.30f));
+        _overlayPrompt   = MakeOverlayLabel("", 16, new Color(0.95f, 0.88f, 0.30f));
 
-        col.AddChild(_overlayKicker);
-        col.AddChild(_overlayTitle);
-        col.AddChild(_overlaySubtitle);
+        _overlayCol.AddChild(_overlayKicker);
+        _overlayCol.AddChild(_overlayTitle);
+        _overlayCol.AddChild(_overlaySubtitle);
 
         var spacer = new Control { CustomMinimumSize = new Vector2(0, 16) };
-        col.AddChild(spacer);
-        col.AddChild(_overlayPrompt);
+        _overlayCol.AddChild(spacer);
+        _overlayCol.AddChild(_overlayPrompt);
     }
 
     private static Label MakeOverlayLabel(string text, int fontSize, Color color)
@@ -216,84 +234,196 @@ public partial class LevelScene : Node2D
     }
 
     /// <summary>
-    /// Show the level-intro overlay. Lock input immediately, briefly let the
-    /// playfield show through, then fade the overlay in.
+    /// Apply the current level's intro text to the shared overlay labels.
+    /// Used both for the first-show and for the Complete→next-Intro transition.
     /// </summary>
-    private void ShowIntro()
+    private void ApplyIntroText()
     {
-        if (_overlayRoot == null || _overlayTitle == null) return;
+        if (_overlayKicker == null || _overlayTitle == null
+            || _overlaySubtitle == null || _overlayPrompt == null) return;
 
         var entry = WorldCatalogue.GetLevel(GameSession.CurrentWorldId ?? "",
                                             GameSession.CurrentLevelIndex);
         var world = WorldCatalogue.FindWorld(GameSession.CurrentWorldId ?? "");
 
-        _overlayKicker!.Text   = world == null
+        _overlayKicker.Text   = world == null
             ? $"Level {GameSession.CurrentLevelIndex + 1}"
             : $"{world.DisplayName}  ·  Level {GameSession.CurrentLevelIndex + 1}";
-        _overlayTitle.Text     = entry?.DisplayName ?? "Untitled";
-        _overlaySubtitle!.Text = "";
-        _overlayPrompt!.Text   = "Press Enter to begin";
-        if (_overlayTitle.LabelSettings is { } iTs) iTs.FontSize = 64;
-
-        StartOverlay(UiState.Intro);
+        _overlayTitle.Text    = entry?.DisplayName ?? "Untitled";
+        _overlaySubtitle.Text = "";
+        _overlayPrompt.Text   = "";   // intro auto-dismisses, no prompt
+        if (_overlayTitle.LabelSettings is { } ts) ts.FontSize = 64;
     }
 
-    /// <summary>
-    /// Begin the Complete sequence: lock input now (so the player can't undo
-    /// the win), but only fade the fullscreen overlay in after a short delay
-    /// so the lit beams remain visible for a moment.
-    /// </summary>
-    private void BeginComplete()
+    private void ApplyCompleteText()
     {
-        if (_overlayRoot == null || _overlayTitle == null) return;
+        if (_overlayKicker == null || _overlayTitle == null
+            || _overlaySubtitle == null || _overlayPrompt == null) return;
 
         var entry = WorldCatalogue.GetLevel(GameSession.CurrentWorldId ?? "",
                                             GameSession.CurrentLevelIndex);
 
-        _overlayKicker!.Text   = ShortLevelTag(GameSession.CurrentWorldId,
-                                               GameSession.CurrentLevelIndex,
-                                               entry?.DisplayName ?? "");
-        _overlayTitle.Text     = "◆  Level Complete  ◆";
-        _overlaySubtitle!.Text = $"Solved in {_state?.MoveCount ?? 0} moves";
-        _overlayPrompt!.Text   = HasNextLevel()
+        _overlayKicker.Text   = ShortLevelTag(GameSession.CurrentWorldId,
+                                              GameSession.CurrentLevelIndex,
+                                              entry?.DisplayName ?? "");
+        _overlayTitle.Text    = "◆  Level Complete  ◆";
+        _overlaySubtitle.Text = $"Solved in {_state?.MoveCount ?? 0} moves";
+        _overlayPrompt.Text   = HasNextLevel()
             ? "Press Enter for the next level    ·    Esc for menu"
             : "Press Enter for level select";
-        if (_overlayTitle.LabelSettings is { } cTs) cTs.FontSize = 72;
-
-        StartOverlay(UiState.Complete);
+        if (_overlayTitle.LabelSettings is { } ts) ts.FontSize = 72;
     }
 
-    private void StartOverlay(UiState target)
+    /// <summary>
+    /// Cover the playfield with the overlay before any rendering shows
+    /// through. Used at scene-load and when manually advancing via N/B keys.
+    /// </summary>
+    private void OverlayPrepareOpaqueBlankText()
     {
         if (_overlayRoot == null) return;
-        _overlayRoot.Modulate = new Color(1f, 1f, 1f, 0f);
+        _overlayRoot.Modulate = Colors.White;                       // alpha = 1
         _overlayRoot.Visible  = true;
-        _fadeT   = 0f;
-        _ui      = target;
+        if (_overlayCol != null)
+            _overlayCol.Modulate = new Color(1f, 1f, 1f, 0f);       // text invisible
+    }
+
+    /// <summary>
+    /// Catalogue-path entry point: load the level behind an already-opaque
+    /// overlay, then start the intro text fade-in. The player never sees a
+    /// bare level beforehand.
+    /// </summary>
+    private void EnterLevelWithIntro(string worldId, int index)
+    {
+        OverlayPrepareOpaqueBlankText();
+        LoadLevel(worldId, index);
+        ApplyIntroText();
+        _ui = UiState.Intro;
+        SetPhase(AnimPhase.IntroTextIn);
+    }
+
+    /// <summary>
+    /// Solver detected solved: leave the overlay invisible for a beat so the
+    /// player can see the lit beams, then fade it in over the playfield.
+    /// </summary>
+    private void BeginComplete()
+    {
+        if (_overlayRoot == null) return;
+        ApplyCompleteText();
+        _overlayRoot.Modulate = new Color(1f, 1f, 1f, 0f);          // start invisible
+        if (_overlayCol != null) _overlayCol.Modulate = Colors.White;
+        _overlayRoot.Visible  = true;
+        _ui      = UiState.Complete;
         _heldDir = Direction.None;
+        SetPhase(AnimPhase.CompleteWait);
     }
 
-    private void TickOverlayFade(float dt)
+    /// <summary>
+    /// Enter on Complete with a next level available. The overlay stays
+    /// opaque the whole time; only the text crossfades — Complete dissolves
+    /// to "black", the next level loads behind it, and that intro text fades
+    /// in. The normal intro hold + overlay-out then runs.
+    /// </summary>
+    private void BeginCompleteToNextIntro()
     {
-        if (_overlayRoot == null || _fadeT < 0f) return;
-        if (_ui != UiState.Intro && _ui != UiState.Complete) return;
-
-        _fadeT += dt;
-        float t     = (_fadeT - OverlayDelay) / OverlayFade;
-        float alpha = Mathf.Clamp(t, 0f, 1f);
-        _overlayRoot.Modulate = new Color(1f, 1f, 1f, alpha);
-        if (_fadeT >= OverlayDelay + OverlayFade) _fadeT = -1f;
+        // Flip _ui to Intro early so a stray Enter during the transition
+        // can't re-trigger BeginCompleteToNextIntro.
+        _ui = UiState.Intro;
+        SetPhase(AnimPhase.InterTextOut);
     }
 
-    private void HideOverlay()
+    private void SetPhase(AnimPhase next)
     {
-        if (_overlayRoot != null)
+        _phase  = next;
+        _phaseT = 0f;
+    }
+
+    private void TickAnim(float dt)
+    {
+        if (_phase == AnimPhase.Idle || _overlayRoot == null) return;
+        _phaseT += dt;
+
+        switch (_phase)
         {
-            _overlayRoot.Visible  = false;
-            _overlayRoot.Modulate = Colors.White;
+            case AnimPhase.IntroTextIn:
+            {
+                float a = Mathf.Clamp(_phaseT / TextFade, 0f, 1f);
+                if (_overlayCol != null) _overlayCol.Modulate = new Color(1f, 1f, 1f, a);
+                if (_phaseT >= TextFade) SetPhase(AnimPhase.IntroHold);
+                break;
+            }
+            case AnimPhase.IntroHold:
+            {
+                if (_phaseT >= IntroHoldT) SetPhase(AnimPhase.IntroOverlayOut);
+                break;
+            }
+            case AnimPhase.IntroOverlayOut:
+            {
+                float a = 1f - Mathf.Clamp(_phaseT / OverlayFade, 0f, 1f);
+                _overlayRoot.Modulate = new Color(1f, 1f, 1f, a);
+                if (_phaseT >= OverlayFade)
+                {
+                    _overlayRoot.Visible  = false;
+                    _overlayRoot.Modulate = Colors.White;
+                    if (_overlayCol != null) _overlayCol.Modulate = Colors.White;
+                    _ui = UiState.Playing;
+                    SetPhase(AnimPhase.Idle);
+                }
+                break;
+            }
+            case AnimPhase.CompleteWait:
+            {
+                if (_phaseT >= CompleteWaitT) SetPhase(AnimPhase.CompleteOverlayIn);
+                break;
+            }
+            case AnimPhase.CompleteOverlayIn:
+            {
+                float a = Mathf.Clamp(_phaseT / OverlayFade, 0f, 1f);
+                _overlayRoot.Modulate = new Color(1f, 1f, 1f, a);
+                if (_phaseT >= OverlayFade) SetPhase(AnimPhase.Idle);
+                break;
+            }
+            case AnimPhase.InterTextOut:
+            {
+                float a = 1f - Mathf.Clamp(_phaseT / TextFade, 0f, 1f);
+                if (_overlayCol != null) _overlayCol.Modulate = new Color(1f, 1f, 1f, a);
+                if (_phaseT >= TextFade)
+                {
+                    AdvanceToNextLevelData();   // load behind the still-opaque overlay
+                    ApplyIntroText();
+                    SetPhase(AnimPhase.InterTextIn);
+                }
+                break;
+            }
+            case AnimPhase.InterTextIn:
+            {
+                float a = Mathf.Clamp(_phaseT / TextFade, 0f, 1f);
+                if (_overlayCol != null) _overlayCol.Modulate = new Color(1f, 1f, 1f, a);
+                if (_phaseT >= TextFade) SetPhase(AnimPhase.IntroHold);
+                break;
+            }
         }
-        _fadeT = -1f;
-        _ui    = UiState.Playing;
+    }
+
+    /// <summary>
+    /// Step <see cref="GameSession"/> to the next level (rolling into the
+    /// next world if needed) and load it. Does NOT touch the overlay — the
+    /// caller drives that.
+    /// </summary>
+    private void AdvanceToNextLevelData()
+    {
+        if (GameSession.CurrentWorldId == null) return;
+        var world = WorldCatalogue.FindWorld(GameSession.CurrentWorldId);
+        if (world == null) return;
+
+        int next = GameSession.CurrentLevelIndex + 1;
+        if (next < world.Levels.Count) { LoadLevel(world.Id, next); return; }
+
+        int wIdx = WorldCatalogue.IndexOfWorld(world.Id);
+        if (wIdx >= 0 && wIdx + 1 < WorldCatalogue.Worlds.Count)
+        {
+            var nextWorld = WorldCatalogue.Worlds[wIdx + 1];
+            if (nextWorld.Levels.Count > 0) LoadLevel(nextWorld.Id, 0);
+        }
     }
 
     /// <summary>
@@ -342,6 +472,11 @@ public partial class LevelScene : Node2D
 
     // ── Level loading ─────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Pure level load: build the grid + GameState. Does not touch the
+    /// overlay. Callers drive any intro animation via EnterLevelWithIntro
+    /// or the inter-level transition phases.
+    /// </summary>
     private void LoadLevel(string worldId, int index)
     {
         var entry = WorldCatalogue.GetLevel(worldId, index);
@@ -358,7 +493,6 @@ public partial class LevelScene : Node2D
 
         CenterCamera(grid);
         OnStateChanged();
-        ShowIntro();
     }
 
     private void NextLevel()
@@ -371,7 +505,7 @@ public partial class LevelScene : Node2D
         int next = GameSession.CurrentLevelIndex + 1;
         if (next < world.Levels.Count)
         {
-            LoadLevel(world.Id, next);
+            EnterLevelWithIntro(world.Id, next);
             return;
         }
 
@@ -380,7 +514,7 @@ public partial class LevelScene : Node2D
         if (wIdx >= 0 && wIdx + 1 < WorldCatalogue.Worlds.Count)
         {
             var nextWorld = WorldCatalogue.Worlds[wIdx + 1];
-            if (nextWorld.Levels.Count > 0) LoadLevel(nextWorld.Id, 0);
+            if (nextWorld.Levels.Count > 0) EnterLevelWithIntro(nextWorld.Id, 0);
         }
     }
 
@@ -394,7 +528,7 @@ public partial class LevelScene : Node2D
         int prev = GameSession.CurrentLevelIndex - 1;
         if (prev >= 0)
         {
-            LoadLevel(world.Id, prev);
+            EnterLevelWithIntro(world.Id, prev);
             return;
         }
 
@@ -403,7 +537,7 @@ public partial class LevelScene : Node2D
         {
             var prevWorld = WorldCatalogue.Worlds[wIdx - 1];
             if (prevWorld.Levels.Count > 0)
-                LoadLevel(prevWorld.Id, prevWorld.Levels.Count - 1);
+                EnterLevelWithIntro(prevWorld.Id, prevWorld.Levels.Count - 1);
         }
     }
 
@@ -477,14 +611,15 @@ public partial class LevelScene : Node2D
 
     private void HandleKeyPress(InputEventKey key)
     {
-        // Overlay state: only Enter (advance) and Esc (back) are honoured.
+        // Overlay states. Intro auto-dismisses (no Enter); Complete advances
+        // via Enter. Esc always escapes back to the menu / editor.
         if (_ui != UiState.Playing)
         {
             switch (key.Keycode)
             {
                 case Key.Enter:
                 case Key.KpEnter:
-                    OnOverlayConfirm();
+                    if (_ui == UiState.Complete) OnOverlayConfirm();
                     return;
                 case Key.Escape:
                     GetTree().ChangeSceneToFile(_playingSandbox
@@ -554,16 +689,11 @@ public partial class LevelScene : Node2D
 
     private void OnOverlayConfirm()
     {
-        switch (_ui)
-        {
-            case UiState.Intro:
-                HideOverlay();
-                break;
-            case UiState.Complete:
-                if (HasNextLevel()) NextLevel();
-                else GetTree().ChangeSceneToFile("res://scenes/LevelSelect.tscn");
-                break;
-        }
+        // Only Complete responds to Enter — and only when no animation is in
+        // flight (otherwise a double-press would re-trigger the transition).
+        if (_ui != UiState.Complete || _phase != AnimPhase.Idle) return;
+        if (HasNextLevel()) BeginCompleteToNextIntro();
+        else GetTree().ChangeSceneToFile("res://scenes/LevelSelect.tscn");
     }
 
     private void HandleHeldMovement(float dt)
