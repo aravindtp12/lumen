@@ -105,10 +105,30 @@ public partial class LevelScene : Node2D
 
     public override void _Process(double delta)
     {
+        _animT += (float)delta;
+        TickOverlayPulse();
         if (_state == null) return;
         HandleHeldMovement((float)delta);
         UpdateToast((float)delta);
         TickAnim((float)delta);
+    }
+
+    private float _animT;
+
+    // Constant breathe on the headline UI — the same Balatro-style undertone
+    // the world objects use, so the screen never looks frozen even on idle
+    // overlays. Runs every frame regardless of game state.
+    private void TickOverlayPulse()
+    {
+        if (_overlayTitle != null && _overlayTitle.Visible)
+            PulseAnim.ApplyTo(_overlayTitle, _animT,
+                              PulseAnim.SeedOf("overlay-title"), amp: 0.06f);
+        if (_overlayPrompt != null && _overlayPrompt.Visible)
+            PulseAnim.ApplyTo(_overlayPrompt, _animT,
+                              PulseAnim.SeedOf("overlay-prompt"), amp: 0.035f);
+        if (_winLabel != null && _winLabel.Visible)
+            PulseAnim.ApplyTo(_winLabel, _animT,
+                              PulseAnim.SeedOf("win-label"), amp: 0.06f);
     }
 
     // ── Scene graph ───────────────────────────────────────────────────────────

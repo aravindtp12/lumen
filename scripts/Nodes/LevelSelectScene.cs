@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using PRISM.Levels;
 using PRISM.Save;
@@ -9,6 +10,9 @@ public partial class LevelSelectScene : Node2D
     private string         _selectedWorldId = "";
     private VBoxContainer? _worldsCol;
     private VBoxContainer? _levelsCol;
+
+    private float _t;
+    private readonly List<(Control node, int seed, float amp)> _pulse = new();
 
     public override void _Ready()
     {
@@ -26,6 +30,16 @@ public partial class LevelSelectScene : Node2D
         BuildHud();
     }
 
+    public override void _Process(double delta)
+    {
+        _t += (float)delta;
+        // Drop nodes whose Godot peers were freed (the levels/worlds columns
+        // get rebuilt on selection change).
+        _pulse.RemoveAll(p => !GodotObject.IsInstanceValid(p.node));
+        foreach (var (node, seed, amp) in _pulse)
+            PulseAnim.ApplyTo(node, _t, seed, amp);
+    }
+
     private void BuildHud()
     {
         var hud = new CanvasLayer { Name = "HUD", Layer = 10 };
@@ -38,6 +52,7 @@ public partial class LevelSelectScene : Node2D
         title.AnchorLeft = 0; title.AnchorRight = 1;
         title.OffsetTop  = 36;
         hud.AddChild(title);
+        _pulse.Add((title, PulseAnim.SeedOf("title"), 0.04f));
 
         var split = new HBoxContainer
         {
@@ -87,6 +102,7 @@ public partial class LevelSelectScene : Node2D
             return;
         }
 
+        int seedIdx = 0;
         foreach (var w in WorldCatalogue.Worlds)
         {
             string id        = w.Id;
@@ -104,6 +120,7 @@ public partial class LevelSelectScene : Node2D
                 BuildLevelsCol();
             };
             _worldsCol.AddChild(btn);
+            _pulse.Add((btn, PulseAnim.SeedOf("world:" + id) + seedIdx++, 0.022f));
         }
     }
 
@@ -137,6 +154,7 @@ public partial class LevelSelectScene : Node2D
                 GetTree().ChangeSceneToFile("res://scenes/Game.tscn");
             };
             _levelsCol.AddChild(btn);
+            _pulse.Add((btn, PulseAnim.SeedOf(world.Id + ":" + idx), 0.022f));
         }
     }
 

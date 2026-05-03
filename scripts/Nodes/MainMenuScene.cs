@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using PRISM.Save;
 
@@ -5,10 +6,20 @@ namespace PRISM.Nodes;
 
 public partial class MainMenuScene : Node2D
 {
+    private float _t;
+    private readonly List<(Control node, int seed, float amp)> _pulse = new();
+
     public override void _Ready()
     {
         GameSession.Reset();
         BuildHud();
+    }
+
+    public override void _Process(double delta)
+    {
+        _t += (float)delta;
+        foreach (var (node, seed, amp) in _pulse)
+            PulseAnim.ApplyTo(node, _t, seed, amp);
     }
 
     private void BuildHud()
@@ -26,6 +37,7 @@ public partial class MainMenuScene : Node2D
             ts.OutlineSize  = 4;
         }
         hud.AddChild(title);
+        _pulse.Add((title, PulseAnim.SeedOf("title"), 0.05f));
 
         var subtitle = MenuTheme.MakeLabel("A puzzle of light and reflection",
                                            18, MenuTheme.TextDim, HorizontalAlignment.Center);
@@ -59,6 +71,12 @@ public partial class MainMenuScene : Node2D
         col.AddChild(loadBtn);
         col.AddChild(editBtn);
         col.AddChild(quitBtn);
+
+        // Subtle desynced breathe across the button stack
+        _pulse.Add((newBtn,  1, 0.025f));
+        _pulse.Add((loadBtn, 2, 0.025f));
+        _pulse.Add((editBtn, 3, 0.025f));
+        _pulse.Add((quitBtn, 4, 0.025f));
 
         var hint = MenuTheme.MakeLabel("Mouse / arrow keys + Enter", 12, MenuTheme.TextFaint,
                                        HorizontalAlignment.Center);

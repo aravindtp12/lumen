@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using PRISM.Levels;
 using PRISM.Save;
@@ -11,7 +12,17 @@ public partial class SaveSlotsScene : Node2D
     /// <summary>Set by the calling scene (MainMenu) before scene change.</summary>
     public static SlotMode Mode = SlotMode.New;
 
+    private float _t;
+    private readonly List<(Control node, int seed, float amp)> _pulse = new();
+
     public override void _Ready() => BuildHud();
+
+    public override void _Process(double delta)
+    {
+        _t += (float)delta;
+        foreach (var (node, seed, amp) in _pulse)
+            PulseAnim.ApplyTo(node, _t, seed, amp);
+    }
 
     private void BuildHud()
     {
@@ -25,6 +36,7 @@ public partial class SaveSlotsScene : Node2D
         title.AnchorLeft = 0; title.AnchorRight = 1;
         title.OffsetTop  = 70;
         hud.AddChild(title);
+        _pulse.Add((title, PulseAnim.SeedOf("title"), 0.045f));
 
         var col = new VBoxContainer
         {
@@ -39,7 +51,9 @@ public partial class SaveSlotsScene : Node2D
         {
             int slot   = i;
             var data   = SaveSystem.Load(slot);
-            col.AddChild(BuildSlotCard(slot, data));
+            var card   = BuildSlotCard(slot, data);
+            col.AddChild(card);
+            _pulse.Add((card, slot, 0.025f));
         }
 
         var back = MenuTheme.MakeButton("Back", new Vector2(140, 36));
